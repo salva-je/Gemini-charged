@@ -4,7 +4,7 @@ Gemini Quick Scroll is a browser extension designed to enhance your experience o
 
 watch the demo video here 👇👇👇 (click on the image)
 
-[![Gemini Quick Scroll Demo Video](https://imgur.com/a/7eD5UtL)](https://www.youtube.com/watch?v=ltvpn1mafE8)
+[![Gemini Quick Scroll Demo Video](Screenshot_64.png)](https://www.youtube.com/watch?v=ltvpn1mafE8)
 
 
 ---
