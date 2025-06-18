@@ -2,7 +2,7 @@
 
 Gemini Quick Scroll is a browser extension designed to enhance your experience on the Gemini website. It adds a smart and customizable sidebar that allows you to efficiently navigate, search, organize, and annotate long conversations.
 
-watch the video demo here 👇👇👇 (click on the image)
+watch the demo video here 👇👇👇 (click on the image)
 
 [![Gemini Quick Scroll Demo Video](https://img.youtube.com/vi/ltvpn1mafE8/maxresdefault.jpg)](https://www.youtube.com/watch?v=ltvpn1mafE8)
 
