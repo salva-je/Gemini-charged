@@ -1,3 +1,10 @@
+/* --- COMPATIBILIDAD CON TODOS LOS NAVEGADORES --- */
+* {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
 /* --- TEMA OSCURO POR DEFECTO --- */
 #gemini-quick-scroll-sidebar {
     position: fixed;
@@ -8,11 +15,22 @@
     background-color: #1e1f20;
     border-right: 1px solid #444746;
     z-index: 1000;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    -ms-flex-direction: column;
     flex-direction: column;
+    -webkit-transition: transform 0.3s ease-in-out, -webkit-transform 0.3s ease-in-out;
+    -o-transition: transform 0.3s ease-in-out;
     transition: transform 0.3s ease-in-out;
+    -webkit-transform: translateX(0);
+    -ms-transform: translateX(0);
     transform: translateX(0);
-    font-family: 'Google Sans', sans-serif;
+    font-family: 'Google Sans', sans-serif, Arial, Helvetica;
 }
 
 #gqs-search-container {
@@ -25,8 +43,12 @@
     width: 100%;
     padding: 8px 10px 8px 35px;
     border: 1px solid #5e616a;
+    -webkit-border-radius: 18px;
+    -moz-border-radius: 18px;
     border-radius: 18px;
     font-size: 14px;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
     box-sizing: border-box;
     background-color: #35363a;
     color: #e3e3e3;
@@ -37,6 +59,8 @@
     position: absolute;
     left: 24px;
     top: 50%;
+    -webkit-transform: translateY(-50%);
+    -ms-transform: translateY(-50%);
     transform: translateY(-50%);
     font-size: 16px;
     color: #bdc1c6;
@@ -46,7 +70,13 @@
 #gqs-sort-container {
     padding: 10px 12px;
     border-bottom: 1px solid #444746;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    -ms-flex-align: center;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
@@ -356,10 +386,14 @@
 
 /* --- Estilos Comunes --- */
 #gemini-quick-scroll-sidebar.collapsed {
+    -webkit-transform: translateX(-100%);
+    -ms-transform: translateX(-100%);
     transform: translateX(-100%);
 }
 
 body.gqs-active main {
+    -webkit-transition: margin-left 0.3s ease-in-out;
+    -o-transition: margin-left 0.3s ease-in-out;
     transition: margin-left 0.3s ease-in-out;
     margin-left: 280px !important;
 }

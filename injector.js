@@ -1,7 +1,50 @@
-// VERSIÓN 8.3 - Corrección final para TrustedHTML
+// VERSIÓN 8.5 - Optimizado específicamente para Brave
 (function() {
     if (window.hasRunGQS) return;
     window.hasRunGQS = true;
+
+    // Detectar si estamos en Brave
+    const IS_BRAVE = (navigator.brave && navigator.brave.isBrave) || 
+                     navigator.userAgent.includes('Brave') ||
+                     window.navigator.brave;
+
+    if (IS_BRAVE) {
+        console.log('GQS Injector: Brave detectado - aplicando optimizaciones específicas');
+    }
+
+    // --- FUNCIONES DE COMPATIBILIDAD ---
+    function clearElement(element) {
+        // Compatibilidad para replaceChildren() que no existe en navegadores antiguos
+        while (element.firstChild) {
+            element.removeChild(element.firstChild);
+        }
+    }
+
+    function isElementVisible(element) {
+        // Verificación robusta de visibilidad
+        return element && 
+               element.offsetParent !== null && 
+               element.style.display !== 'none' && 
+               element.style.visibility !== 'hidden';
+    }
+
+    function safeQuerySelector(selector, context = document) {
+        try {
+            return context.querySelector(selector);
+        } catch (e) {
+            console.warn('GQS: Error en selector:', selector, e);
+            return null;
+        }
+    }
+
+    function safeQuerySelectorAll(selector, context = document) {
+        try {
+            return context.querySelectorAll(selector);
+        } catch (e) {
+            console.warn('GQS: Error en selector:', selector, e);
+            return [];
+        }
+    }
 
     // --- SELECTORES Y CONSTANTES ---
     const SELECTOR_SCROLL_CONTAINER = '.chat-history-scroll-container';
@@ -14,34 +57,82 @@
     // --- ESTADO DE LA EXTENSIÓN ---
     let gqsCurrentURL = '';
     let gqsSortType = 'normal'; // 'normal' o 'by_type'
-    let gqsSortOrder = 'asc';   // 'asc' o 'desc'
-
-    // --- FUNCIONES DE ALMACENAMIENTO (PUENTE A content.js) ---
+    let gqsSortOrder = 'asc';   // 'asc' o 'desc'    // --- FUNCIONES DE ALMACENAMIENTO (PUENTE A content.js) ---
     function getStorageKey() {
-        const cleanUrl = new URL(window.location.href);
-        return `gqs-chat-data:${cleanUrl.origin}${cleanUrl.pathname}`;
-    }
-    
-    function getChatData() {
+        try {
+            const cleanUrl = new URL(window.location.href);
+            return `gqs-chat-data:${cleanUrl.origin}${cleanUrl.pathname}`;
+        } catch (e) {
+            // Fallback si URL() no está disponible
+            const currentUrl = window.location.href;
+            const baseUrl = currentUrl.split('?')[0].split('#')[0];
+            return `gqs-chat-data:${baseUrl}`;
+        }
+    }    function getChatData() {
         return new Promise((resolve) => {
             const key = getStorageKey();
-            const requestId = `gqs_req_${Date.now()}_${Math.random()}`;
+            const requestId = `gqs_req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
             const listener = (event) => {
-                if (event.source === window && event.data.type === 'GQS_GET_DATA_RESPONSE' && event.data.requestId === requestId) {
+                if (event.source === window && 
+                    event.data && 
+                    event.data.type === 'GQS_GET_DATA_RESPONSE' && 
+                    event.data.requestId === requestId) {
                     window.removeEventListener('message', listener);
-                    resolve(event.data.payload);
+                    resolve(event.data.payload || {});
                 }
             };
+
+            // Timeout de seguridad específico para Brave
+            const timeoutDuration = IS_BRAVE ? 8000 : 5000;
+            const timeout = setTimeout(() => {
+                window.removeEventListener('message', listener);
+                console.warn('GQS: Timeout al obtener datos del storage');
+                resolve({});
+            }, timeoutDuration);
+
             window.addEventListener('message', listener);
 
-            window.postMessage({ type: 'GQS_GET_DATA', payload: { key, requestId } }, '*');
+            // En Brave, enviar el mensaje después de un pequeño delay
+            const sendMessage = () => {
+                window.postMessage({ 
+                    type: 'GQS_GET_DATA', 
+                    payload: { key, requestId } 
+                }, '*');
+            };
+
+            if (IS_BRAVE) {
+                setTimeout(sendMessage, 50);
+            } else {
+                sendMessage();
+            }
+
+            // Limpiar el timeout si la respuesta llega a tiempo
+            const originalResolve = resolve;
+            resolve = function(data) {
+                clearTimeout(timeout);
+                originalResolve(data);
+            };
         });
-    }
-    
-    function saveChatData(data) {
-        const key = getStorageKey();
-        window.postMessage({ type: 'GQS_SAVE_DATA', payload: { key, data } }, '*');
+    }    function saveChatData(data) {
+        try {
+            const key = getStorageKey();
+            const message = { 
+                type: 'GQS_SAVE_DATA', 
+                payload: { key, data } 
+            };
+            
+            // En Brave, enviar el mensaje después de un pequeño delay
+            if (IS_BRAVE) {
+                setTimeout(() => {
+                    window.postMessage(message, '*');
+                }, 50);
+            } else {
+                window.postMessage(message, '*');
+            }
+        } catch (e) {
+            console.warn('GQS: Error al guardar datos:', e);
+        }
     }
 
     async function updateMessageData(messageId, newData) {
@@ -59,45 +150,143 @@
         }
 
         saveChatData(chatData);
-    }
-
-    // --- FUNCIÓN DE INICIALIZACIÓN ---
+    }    // --- FUNCIÓN DE INICIALIZACIÓN ---
     function initializeExtension() {
-      main();
+        try {
+            main();
+        } catch (e) {
+            console.error('GQS: Error durante la inicialización:', e);
+        }
     }
-    
-    const onReadyObserver = new MutationObserver((mutations, obs) => {
-      if (document.querySelector('main')) { initializeExtension(); obs.disconnect(); }
-    });
-    onReadyObserver.observe(document.body, { childList: true, subtree: true });
+      // Inicialización robusta compatible con todos los navegadores
+    function waitForMain() {
+        const mainElement = safeQuerySelector('main');
+        if (mainElement) {
+            // En Brave, esperar un poco más antes de inicializar
+            if (IS_BRAVE) {
+                setTimeout(initializeExtension, 200);
+            } else {
+                initializeExtension();
+            }
+            return;
+        }
 
-    // --- LÓGICA PRINCIPAL ---
+        // Fallback para navegadores que no soportan MutationObserver
+        if (typeof MutationObserver !== 'undefined') {
+            const onReadyObserver = new MutationObserver((mutations, obs) => {
+                if (safeQuerySelector('main')) { 
+                    obs.disconnect();
+                    if (IS_BRAVE) {
+                        setTimeout(initializeExtension, 200);
+                    } else {
+                        initializeExtension();
+                    }
+                }
+            });
+            
+            if (document.body) {
+                onReadyObserver.observe(document.body, { childList: true, subtree: true });
+            } else {
+                // Si body no está listo, esperar a DOMContentLoaded
+                document.addEventListener('DOMContentLoaded', () => {
+                    if (document.body) {
+                        onReadyObserver.observe(document.body, { childList: true, subtree: true });
+                    }
+                });
+            }
+        } else {
+            // Fallback para navegadores muy antiguos
+            const checkInterval = setInterval(() => {
+                if (safeQuerySelector('main')) {
+                    clearInterval(checkInterval);
+                    if (IS_BRAVE) {
+                        setTimeout(initializeExtension, 200);
+                    } else {
+                        initializeExtension();
+                    }
+                }
+            }, 100);
+            
+            // Timeout de seguridad
+            setTimeout(() => {
+                clearInterval(checkInterval);
+            }, 10000);
+        }
+    }
+
+    // Iniciar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', waitForMain);
+    } else {
+        waitForMain();
+    }    // --- LÓGICA PRINCIPAL ---
     function main() {
-      injectSidebar();
-      gqsCurrentURL = window.location.href;
-      updateNavList();
+        try {
+            // En Brave, verificar que el contexto es seguro antes de continuar
+            if (IS_BRAVE) {
+                if (!window.location.href.includes('gemini.google.com')) {
+                    console.warn('GQS: Extensión ejecutándose fuera de Gemini en Brave');
+                    return;
+                }
+            }
 
-      const observer = new MutationObserver(() => {
-        const loadBtn = document.getElementById('gqs-load-history-btn');
-        if (loadBtn && !loadBtn.disabled) {
-            clearTimeout(window.gqsDebounce);
-            window.gqsDebounce = setTimeout(updateNavList, 500);
-        }
-      });
-      observer.observe(document.querySelector('main'), { childList: true, subtree: true });
-
-      document.body.addEventListener('click', (e) => {
-          if (!e.target.closest('.gqs-actions, .gqs-color-palette, .gqs-note-bubble, .gqs-note-actions')) {
-              closeAllPopups();
-          }
-      });
-
-      setInterval(() => {
-        if (window.location.href !== gqsCurrentURL) {
+            injectSidebar();
             gqsCurrentURL = window.location.href;
-            resetForNewChat();
+            
+            // Dar tiempo a que la sidebar se inyecte antes de actualizar
+            setTimeout(() => {
+                updateNavList();
+            }, IS_BRAVE ? 300 : 100);
+
+            // Observer más robusto
+            const mainElement = safeQuerySelector('main');
+            if (mainElement && typeof MutationObserver !== 'undefined') {
+                const observer = new MutationObserver(() => {
+                    const loadBtn = document.getElementById('gqs-load-history-btn');
+                    if (loadBtn && !loadBtn.disabled) {
+                        clearTimeout(window.gqsDebounce);
+                        window.gqsDebounce = setTimeout(updateNavList, IS_BRAVE ? 800 : 500);
+                    }
+                });
+                observer.observe(mainElement, { childList: true, subtree: true });
+            }
+
+            // Event listener más robusto
+            const handleBodyClick = (e) => {
+                try {
+                    if (!e.target.closest('.gqs-actions, .gqs-color-palette, .gqs-note-bubble, .gqs-note-actions')) {
+                        closeAllPopups();
+                    }
+                } catch (err) {
+                    console.warn('GQS: Error en event listener:', err);
+                }
+            };
+
+            if (document.body) {
+                document.body.addEventListener('click', handleBodyClick);
+            }
+
+            // Monitor de cambios de URL con intervalo ajustado para Brave
+            const urlCheckInterval = IS_BRAVE ? 1500 : 1000;
+            let urlCheckTimer = setInterval(() => {
+                try {
+                    if (window.location.href !== gqsCurrentURL) {
+                        gqsCurrentURL = window.location.href;
+                        resetForNewChat();
+                    }
+                } catch (err) {
+                    console.warn('GQS: Error en monitor de URL:', err);
+                }
+            }, urlCheckInterval);
+
+            // Limpiar timer si la página se descarga
+            window.addEventListener('beforeunload', () => {
+                clearInterval(urlCheckTimer);
+            });
+
+        } catch (e) {
+            console.error('GQS: Error en función main:', e);
         }
-      }, 500);
     }
 
     function resetForNewChat() {
@@ -110,42 +299,75 @@
         }
         setTimeout(updateNavList, 250);
     }
-    
-    async function handleLoadHistoryClick() {
+      async function handleLoadHistoryClick() {
         const loadBtn = document.getElementById('gqs-load-history-btn');
         if (!loadBtn || loadBtn.disabled) return;
-        loadBtn.textContent = 'Loading...';
-        loadBtn.disabled = true;
-        loadBtn.classList.add('loading');
-        const scrollContainer = document.querySelector(SELECTOR_SCROLL_CONTAINER);
-        if (!scrollContainer) {
-            loadBtn.textContent = 'Error: No se encontró el panel';
-            loadBtn.disabled = false; return;
-        }
-        let topMessage = null; let stallTimeout; let scrollInterval;
-        const finishLoading = async () => {
-            clearInterval(scrollInterval);
-            scrollContainer.scrollTop = scrollContainer.scrollHeight;
-            await new Promise(resolve => setTimeout(resolve, 100));
-            loadBtn.classList.remove('loading');
-            loadBtn.textContent = 'Loading complete';
-            loadBtn.classList.add('loaded');
-            updateNavList();
-        };
-        const resetStallTimeout = () => {
-            clearTimeout(stallTimeout);
-            stallTimeout = setTimeout(finishLoading, 1200);
-        };
-        scrollInterval = setInterval(() => {
-            const currentTopMessage = document.querySelector(SELECTOR_MENSAJES);
-            if (!currentTopMessage) return;
-            if (currentTopMessage !== topMessage) {
-                topMessage = currentTopMessage;
-                resetStallTimeout();
+        
+        try {
+            loadBtn.textContent = 'Loading...';
+            loadBtn.disabled = true;
+            loadBtn.classList.add('loading');
+            
+            const scrollContainer = safeQuerySelector(SELECTOR_SCROLL_CONTAINER);
+            if (!scrollContainer) {
+                loadBtn.textContent = 'Error: No se encontró el panel';
+                loadBtn.disabled = false; 
+                return;
             }
-            currentTopMessage.scrollIntoView({ block: 'start', behavior: 'auto' });
-        }, 200);
-        resetStallTimeout();
+            
+            let topMessage = null; 
+            let stallTimeout; 
+            let scrollInterval;
+            
+            const finishLoading = async () => {
+                try {
+                    clearInterval(scrollInterval);
+                    clearTimeout(stallTimeout);
+                    scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    loadBtn.classList.remove('loading');
+                    loadBtn.textContent = 'Loading complete';
+                    loadBtn.classList.add('loaded');
+                    updateNavList();
+                } catch (e) {
+                    console.warn('GQS: Error al finalizar carga:', e);
+                }
+            };
+            
+            const resetStallTimeout = () => {
+                clearTimeout(stallTimeout);
+                stallTimeout = setTimeout(finishLoading, 1500); // Aumentado para mejor compatibilidad
+            };
+            
+            scrollInterval = setInterval(() => {
+                try {
+                    const currentTopMessage = safeQuerySelector(SELECTOR_MENSAJES);
+                    if (!currentTopMessage) return;
+                    
+                    if (currentTopMessage !== topMessage) {
+                        topMessage = currentTopMessage;
+                        resetStallTimeout();
+                    }
+                    
+                    // Scroll más compatible
+                    if (currentTopMessage.scrollIntoView) {
+                        currentTopMessage.scrollIntoView({ block: 'start', behavior: 'auto' });
+                    } else {
+                        // Fallback para navegadores que no soportan scrollIntoView con opciones
+                        currentTopMessage.scrollIntoView(true);
+                    }
+                } catch (e) {
+                    console.warn('GQS: Error durante scroll:', e);
+                }
+            }, 300); // Aumentado para mejor compatibilidad
+            
+            resetStallTimeout();
+            
+        } catch (e) {
+            console.error('GQS: Error en handleLoadHistoryClick:', e);
+            loadBtn.textContent = 'Error';
+            loadBtn.disabled = false;
+        }
     }
 
     function injectSidebar() {
@@ -225,64 +447,68 @@
             const fullText = link ? link.title.toLowerCase() : '';
             item.style.display = fullText.includes(filterText) ? '' : 'none';
         });
-    }
+    }    async function updateNavList() {
+        try {
+            const navList = document.getElementById('gqs-nav-list');
+            const toggleBtn = document.getElementById('gqs-toggle-btn');
+            if (!navList || !toggleBtn) return;
+            
+            const chatData = await getChatData();
+            const currentScroll = navList.scrollTop;
+            
+            // Limpiar la lista de manera compatible con todos los navegadores
+            clearElement(navList);
+            
+            let navItemsData = [];
+            const messages = safeQuerySelectorAll(SELECTOR_MENSAJES);
 
-    async function updateNavList() {
-        const navList = document.getElementById('gqs-nav-list');
-        const toggleBtn = document.getElementById('gqs-toggle-btn');
-        if (!navList || !toggleBtn) return;
-        
-        const chatData = await getChatData();
-        const currentScroll = navList.scrollTop;
-        
-        // --- LÍNEA CORREGIDA ---
-        // Se usa el método seguro para limpiar la lista
-        navList.replaceChildren();
-        
-        let navItemsData = [];
-        const messages = document.querySelectorAll(SELECTOR_MENSAJES);
+            messages.forEach((element, index) => {
+                try {
+                    let textElement, icon;
+                    if (element.matches && element.matches(SELECTOR_CONTENEDOR_USUARIO)) {
+                        textElement = safeQuerySelector(SELECTOR_TEXTO_USUARIO, element);
+                        icon = '👤';                    } else {
+                        textElement = element;
+                        icon = '✨';
+                    }
 
-        messages.forEach((element, index) => {
-            let textElement, icon;
-            if (element.matches(SELECTOR_CONTENEDOR_USUARIO)) {
-                textElement = element.querySelector(SELECTOR_TEXTO_USUARIO);
-                icon = '👤';
-            } else {
-                textElement = element;
-                icon = '✨';
+                    if (textElement) {
+                        const unwantedTextRegex = /Mostrar cuando piensa/g;
+                        const originalText = textElement.textContent || '';
+                        const cleanText = originalText.replace(unwantedTextRegex, '').trim();
+                        if (cleanText) {
+                            const messageId = createMessageId(icon, cleanText);
+                            element.id = messageId;
+                            navItemsData.push({ element, index, icon, cleanText, messageId });
+                        }
+                    }
+                } catch (e) {
+                    console.warn('GQS: Error procesando mensaje:', e);
+                }            });
+
+            if (gqsSortType === 'by_type') {
+                const userItems = navItemsData.filter(item => item.icon === '👤');
+                const geminiItems = navItemsData.filter(item => item.icon === '✨');
+                navItemsData = [...userItems, ...geminiItems];
             }
 
-            if (textElement) {
-                const unwantedTextRegex = /Mostrar cuando piensa/g;
-                const originalText = textElement.textContent || '';
-                const cleanText = originalText.replace(unwantedTextRegex, '').trim();
-                if (cleanText) {
-                    const messageId = createMessageId(icon, cleanText);
-                    element.id = messageId;
-                    navItemsData.push({ element, index, icon, cleanText, messageId });
-                }
+            if (gqsSortOrder === 'desc') {
+                navItemsData.reverse();
             }
-        });
 
-        if (gqsSortType === 'by_type') {
-            const userItems = navItemsData.filter(item => item.icon === '👤');
-            const geminiItems = navItemsData.filter(item => item.icon === '✨');
-            navItemsData = [...userItems, ...geminiItems];
+            navItemsData.forEach(itemData => {
+                const messageInfo = chatData[itemData.messageId] || {};
+                const listItem = createNavItemElement(itemData, messageInfo);
+                navList.appendChild(listItem);
+            });
+
+            navList.scrollTop = currentScroll;
+            filterNavList();
+            toggleBtn.style.display = navList.children.length > 0 ? 'flex' : 'none';
+            
+        } catch (e) {
+            console.error('GQS: Error en updateNavList:', e);
         }
-
-        if (gqsSortOrder === 'desc') {
-            navItemsData.reverse();
-        }
-
-        navItemsData.forEach(itemData => {
-            const messageInfo = chatData[itemData.messageId] || {};
-            const listItem = createNavItemElement(itemData, messageInfo);
-            navList.appendChild(listItem);
-        });
-
-        navList.scrollTop = currentScroll;
-        filterNavList();
-        toggleBtn.style.display = navList.children.length > 0 ? 'flex' : 'none';
     }
     
     function createMessageId(icon, text) { // Ya no necesitamos 'index'
@@ -316,12 +542,24 @@
         summarySpan.textContent = summary;
         
         link.appendChild(iconSpan);
-        link.appendChild(summarySpan);
-
-        link.addEventListener('click', (e) => {
+        link.appendChild(summarySpan);        link.addEventListener('click', (e) => {
             e.preventDefault();
             closeAllPopups();
-            document.getElementById(messageId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const targetElement = document.getElementById(messageId);
+            if (targetElement) {
+                // Scroll compatible con todos los navegadores
+                if (targetElement.scrollIntoView) {
+                    try {
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    } catch (err) {
+                        // Fallback para navegadores que no soportan opciones
+                        targetElement.scrollIntoView(true);
+                    }
+                } else {
+                    // Fallback manual para navegadores muy antiguos
+                    targetElement.scrollTop = targetElement.offsetTop;
+                }
+            }
         });
 
         const actionsContainer = document.createElement('div');
@@ -336,10 +574,30 @@
         listItem.appendChild(actionsContainer);
         
         return listItem;
-    }
-
-    function closeAllPopups() {
-        document.querySelectorAll('.gqs-color-palette, .gqs-note-bubble, .gqs-note-actions, .gqs-readonly-note').forEach(el => el.remove());
+    }    function closeAllPopups() {
+        try {
+            const popupSelectors = [
+                '.gqs-color-palette', 
+                '.gqs-note-bubble', 
+                '.gqs-note-actions', 
+                '.gqs-readonly-note'
+            ];
+            
+            popupSelectors.forEach(selector => {
+                const elements = safeQuerySelectorAll(selector);
+                elements.forEach(el => {
+                    try {
+                        if (el.parentNode) {
+                            el.parentNode.removeChild(el);
+                        }
+                    } catch (e) {
+                        console.warn('GQS: Error removiendo popup:', e);
+                    }
+                });
+            });
+        } catch (e) {
+            console.warn('GQS: Error en closeAllPopups:', e);
+        }
     }
     
     function createColorIcon(messageId, listItem) {
