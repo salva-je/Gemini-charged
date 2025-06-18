@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "Gemini Quick Scroll",
+  "version": "3.0",
+  "description": "Añade una barra de navegación y búsqueda rápida, con notas y colores, para conversaciones largas en la web de Gemini.",
+  "author": "Tu Nombre (creado con ayuda de Gemini)",
+
+  "icons": {
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png"
+  },
+
+  "permissions": [
+    "storage"
+  ],
+
+  "host_permissions": [
+    "*://gemini.google.com/*"
+  ],
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "geminicharged@criforge.com",
+      "strict_min_version": "109.0"
+    }
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["*://gemini.google.com/*"],
+      "js": ["content.js"],
+      "css": ["style.css"],
+      "run_at": "document_start"
+    }
+  ],
+  
+  "web_accessible_resources": [
+    {
+      "resources": ["injector.js"],
+      "matches": ["*://gemini.google.com/*"]
+    }
+  ]
+}

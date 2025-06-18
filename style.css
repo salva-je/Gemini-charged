@@ -1,0 +1,404 @@
+/* --- TEMA OSCURO POR DEFECTO --- */
+#gemini-quick-scroll-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100%;
+    background-color: #1e1f20;
+    border-right: 1px solid #444746;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(0);
+    font-family: 'Google Sans', sans-serif;
+}
+
+#gqs-search-container {
+    position: relative;
+    padding: 12px;
+    border-bottom: 1px solid #444746;
+}
+
+#gqs-search-input {
+    width: 100%;
+    padding: 8px 10px 8px 35px;
+    border: 1px solid #5e616a;
+    border-radius: 18px;
+    font-size: 14px;
+    box-sizing: border-box;
+    background-color: #35363a;
+    color: #e3e3e3;
+}
+
+#gqs-search-container::before {
+    content: '🔎';
+    position: absolute;
+    left: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    color: #bdc1c6;
+}
+
+/* --- ESTILOS PARA ORDENACIÓN --- */
+#gqs-sort-container {
+    padding: 10px 12px;
+    border-bottom: 1px solid #444746;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background-color: #282a2c;
+}
+
+#gqs-sort-container select, #gqs-sort-container button {
+    background-color: #35363a;
+    color: #e3e3e3;
+    border: 1px solid #5e616a;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#gqs-sort-container select:hover, #gqs-sort-container button:hover {
+    background-color: #45474a;
+}
+
+#gqs-sort-container select {
+    flex-grow: 1; 
+}
+
+#gqs-sort-container button {
+    white-space: nowrap; 
+}
+
+
+/* --- ESTILO DEL BOTÓN DE CARGA --- */
+#gqs-load-container {
+    padding: 12px;
+    border-bottom: 1px solid #444746;
+}
+
+#gqs-load-history-btn {
+    width: 100%;
+    background-image: linear-gradient(to right, #434e68 0%, #2e3a52 51%, #434e68 100%);
+    background-size: 200% auto;
+    border: none;
+    color: #c9d1d9;
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.4s ease-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+#gqs-load-history-btn::before {
+    content: '📜';
+    font-size: 16px;
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+#gqs-load-history-btn:hover:not(:disabled):not(.loaded) {
+    background-position: right center;
+    color: #ffffff;
+    box-shadow: 0 0 15px rgba(138, 180, 248, 0.35);
+}
+
+#gqs-load-history-btn:hover:not(:disabled):not(.loaded)::before {
+    transform: rotate(-15deg);
+}
+
+#gqs-load-history-btn:disabled {
+    background-image: none;
+    background-color: #3c4043;
+    color: #9aa0a6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+#gqs-load-history-btn.loading::before {
+    content: '⏳';
+    animation: spin 1.5s linear infinite;
+}
+
+#gqs-load-history-btn.loaded {
+    background-image: linear-gradient(to right, #2e4235 0%, #3a5342 51%, #2e4235 100%);
+    color: #81c995;
+    cursor: default;
+    box-shadow: none;
+}
+
+#gqs-load-history-btn.loaded::before {
+    content: '✅';
+    transform: none;
+}
+
+/* --- ESTILOS DE LA LISTA DE NAVEGACIÓN (CORREGIDOS) --- */
+#gqs-nav-list li {
+    border-bottom: 1px solid #444746;
+    display: flex;
+    justify-content: space-between;
+    align-items: center; 
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+
+#gqs-nav-list a {
+    color: #e3e3e3;
+    padding: 12px 15px;
+    flex-grow: 1;
+    display: flex; 
+    align-items: center;
+    overflow: hidden; 
+    text-decoration: none; /* Añadido: elimina el subrayado de los enlaces */
+}
+
+.gqs-summary-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#gqs-nav-list li:hover {
+    background-color: #35363a;
+}
+
+.gqs-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0; 
+    padding: 0 12px;
+    background-color: #282a2c;
+    border-left: 1px solid #444746;
+    align-self: stretch; 
+}
+
+.gqs-action-icon {
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+    user-select: none;
+}
+
+.gqs-action-icon:hover {
+    background-color: #5d6165;
+}
+
+.gqs-note-icon.has-note {
+    filter: drop-shadow(0 0 4px #a8c7fa);
+}
+
+
+/* --- PALETA DE COLORES --- */
+.gqs-color-palette {
+    position: absolute;
+    right: 50px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: #2d2f31;
+    border-radius: 8px;
+    padding: 6px;
+    display: flex;
+    gap: 6px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    z-index: 1001;
+}
+
+.gqs-color-swatch {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.gqs-color-swatch:hover {
+    transform: scale(1.2);
+}
+
+.gqs-color-swatch.remover {
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #555;
+    color: white;
+}
+
+/* --- ESTILOS DE NOTAS --- */
+.gqs-note-actions {
+    position: absolute;
+    right: 80px; 
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 6px;
+    background-color: #2d2f31;
+    padding: 5px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    z-index: 1003;
+}
+
+.gqs-note-action-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, filter 0.2s;
+}
+
+.gqs-note-action-btn:hover {
+    transform: scale(1.1);
+    filter: brightness(1.2);
+}
+
+.gqs-edit-btn {
+    background-color: #3b74d7;
+}
+
+.gqs-delete-btn {
+    background-color: #d94335;
+}
+
+.gqs-note-bubble {
+    position: absolute;
+    bottom: 105%;
+    left: 15px; 
+    width: calc(100% - 30px);
+    background-color: #3c4043;
+    color: #e3e3e3;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    font-size: 14px;
+    z-index: 1002;
+    box-sizing: border-box;
+    display: flex; 
+    flex-direction: column;
+    gap: 8px;
+}
+
+.gqs-note-bubble.is-flipped {
+    bottom: auto;
+    top: 105%;
+}
+
+.gqs-note-bubble p {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.gqs-note-bubble textarea {
+    width: 100%;
+    min-height: 60px;
+    background-color: #2d2f31;
+    color: #e3e3e3;
+    border: 1px solid #5e616a;
+    border-radius: 4px;
+    padding: 8px;
+    box-sizing: border-box;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.gqs-note-bubble-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.gqs-note-bubble-actions button {
+    background-color: #4a4d50;
+    color: #e3e3e3;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.gqs-note-bubble-actions button:hover {
+    background-color: #5d6165;
+}
+
+/* --- FIN MODIFICACIONES --- */
+
+#gqs-toggle-btn {
+    background-color: #1e1f20;
+    border: 1px solid #444746;
+    color: #e3e3e3;
+}
+
+/* --- Estilos Comunes --- */
+#gemini-quick-scroll-sidebar.collapsed {
+    transform: translateX(-100%);
+}
+
+body.gqs-active main {
+    transition: margin-left 0.3s ease-in-out;
+    margin-left: 280px !important;
+}
+
+body.gqs-active.gqs-collapsed main {
+    margin-left: 0 !important;
+}
+
+#gqs-nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.gqs-icon {
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+#gqs-toggle-btn {
+    position: absolute;
+    top: 50%;
+    right: -20px;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 60px;
+    border-left: none;
+    border-radius: 0 5px 5px 0;
+    cursor: pointer;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
