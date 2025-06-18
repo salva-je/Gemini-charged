@@ -23,17 +23,54 @@ watch the demo video here 👇👇👇 (click on the image)
 
 ## Installation
 
-Since the extension is not published on an official store, you can install it locally by following these steps:
+This extension has been optimized for compatibility with all modern browsers, including Chrome, Firefox, Safari, Brave, Edge, Opera, and others. Choose the installation method for your browser:
 
-1.  Download or clone this repository to your computer.
-2.  Open your browser (Google Chrome, Firefox, etc.).
-3.  Go to the extension management page:
-    * In Chrome: `chrome://extensions`
-    * In Firefox: `about:debugging`
-4.  Enable "Developer Mode".
-5.  Click "Load unpacked" or "Load Temporary Add-on".
-6.  Select the folder where you downloaded the extension files.
-7.  Done! The extension should appear in your browser and activate when you visit `gemini.google.com`.
+### Chrome, Brave, Edge, Opera (Chromium-based browsers)
+
+1. Download or clone this repository to your computer.
+2. Open your browser and go to the extensions page:
+   - **Chrome**: `chrome://extensions`
+   - **Brave**: `brave://extensions` (See [BRAVE-INSTALL.md](BRAVE-INSTALL.md) for detailed Brave-specific instructions)
+   - **Edge**: `edge://extensions`
+   - **Opera**: `opera://extensions`
+3. Enable "Developer Mode" (toggle in the top right).
+4. Click "Load unpacked" and select the folder where you downloaded the extension files.
+5. Make sure to use the main `manifest.json` file (Manifest V3).
+
+**Special note for Brave users**: Brave has additional security features that may require specific configuration. Please see [BRAVE-INSTALL.md](BRAVE-INSTALL.md) for detailed instructions including Brave Shields configuration.
+
+### Firefox
+
+1. Download or clone this repository to your computer.
+2. Open Firefox and go to `about:debugging`.
+3. Click "This Firefox" in the sidebar.
+4. Click "Load Temporary Add-on".
+5. Navigate to the extension folder and select the `manifest.json` file.
+
+### Safari (macOS)
+
+1. Download or clone this repository to your computer.
+2. Open Safari and go to Safari > Preferences > Advanced.
+3. Check "Show Develop menu in menu bar".
+4. Go to Develop > Allow Unsigned Extensions.
+5. Go to Safari > Preferences > Extensions.
+6. Click the "+" button and select the extension folder.
+
+### Troubleshooting
+
+**If the extension doesn't work in Brave:**
+- Make sure Brave Shields are not blocking the extension
+- Try disabling "Prevent sites from fingerprinting me" for gemini.google.com
+- Check that JavaScript is enabled
+
+**If the extension doesn't load:**
+- Make sure you're using the correct manifest file for your browser
+- For older browsers, try using `manifest-v2.json` instead of `manifest.json`
+- Check the browser console for any error messages
+
+**For browsers that don't support Manifest V3:**
+- Rename `manifest-v2.json` to `manifest.json`
+- This provides compatibility with older browser versions
 
 ## Usage
 
